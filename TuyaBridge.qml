@@ -22,12 +22,5 @@ Item {
             width: parent.width
             wrapMode: Text.WordWrap
         }
-
-        Text {
-            color: theme.primarytextcolor
-            text: "Status: " + service.getProperty("bridgeStatus")
-            font.pixelSize: 13
-            font.family: "Poppins"
-        }
     }
 }
