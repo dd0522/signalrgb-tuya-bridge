@@ -1,24 +1,7 @@
-export function Name() { return "Tuya Bridge"; }
-export function Version() { return "1.0.0"; }
-export function Type() { return "network"; }
-export function Publisher() { return "custom"; }
-export function Size() { return [1, 1]; }
-export function DefaultPosition() { return [0, 70]; }
-export function DefaultScale() { return 1.0; }
-export function ControllableParameters() {
-    return [
-        {"property":"LightingMode", "group":"lighting", "label":"Lighting Mode", "type":"combobox", "values":["Canvas", "Forced"], "default":"Canvas"},
-        {"property":"forcedColor", "group":"lighting", "label":"Forced Color", "type":"color", "default":"#FF0000"}
-    ];
-}
-
 let lastR = -1, lastG = -1, lastB = -1;
-
-export function Initialize() {
-    device.setName("Tuya RGB Strip");
-    device.setSize([1, 1]);
-    device.setControllableLeds(["LED 1"], [[0, 0]]);
-}
+let requestInFlight = false;
+let lastSendTime = 0;
+const SEND_INTERVAL = 50; // ms, ~20fps max
 
 export function Render() {
     let r, g, b;
@@ -33,16 +16,28 @@ export function Render() {
     }
 
     if (r === lastR && g === lastG && b === lastB) return;
+    if (requestInFlight) return;
+
+    const now = Date.now();
+    if (now - lastSendTime < SEND_INTERVAL) return;
+
     lastR = r; lastG = g; lastB = b;
+    lastSendTime = now;
+    requestInFlight = true;
 
     try {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", `http://localhost:5000/color?r=${r}&g=${g}&b=${b}`, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) requestInFlight = false;
+        };
         xhr.send();
     } catch(e) {
+        requestInFlight = false;
         device.log("Request error: " + e.message);
     }
 }
+
 
 export function Shutdown() {}
 export function Validate() { return true; }
