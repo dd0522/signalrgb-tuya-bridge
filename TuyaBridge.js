@@ -71,14 +71,17 @@ class TuyaBridgeController {
 }
 
 export function DiscoveryService() {
+    this.controller = null;
+
     this.Initialize = function() {
         service.log("Tuya Bridge: DiscoveryService init");
-        service.addController(new TuyaBridgeController());
+        this.controller = new TuyaBridgeController();
+        service.addController(this.controller);
     }
 
     this.Update = function() {
-        for (const cont of service.controllers) {
-            cont.obj.update();
+        if (this.controller && !this.controller.initialized) {
+            this.controller.update();
         }
     }
 
