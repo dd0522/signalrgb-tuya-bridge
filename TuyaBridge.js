@@ -35,7 +35,13 @@ export function Render() {
     if (r === lastR && g === lastG && b === lastB) return;
     lastR = r; lastG = g; lastB = b;
 
-    fetch(`http://localhost:5000/color?r=${r}&g=${g}&b=${b}`).catch(() => {});
+    try {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", `http://localhost:5000/color?r=${r}&g=${g}&b=${b}`, true);
+        xhr.send();
+    } catch(e) {
+        device.log("Request error: " + e.message);
+    }
 }
 
 export function Shutdown() {}
