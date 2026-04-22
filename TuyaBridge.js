@@ -13,6 +13,9 @@ export function ControllableParameters() {
 }
 
 let lastR = -1, lastG = -1, lastB = -1;
+let requestInFlight = false;
+let lastSendTime = 0;
+const SEND_INTERVAL = 50;
 
 export function Initialize() {
     device.setName("Tuya RGB Strip");
@@ -33,13 +36,24 @@ export function Render() {
     }
 
     if (r === lastR && g === lastG && b === lastB) return;
+    if (requestInFlight) return;
+
+    const now = Date.now();
+    if (now - lastSendTime < SEND_INTERVAL) return;
+
     lastR = r; lastG = g; lastB = b;
+    lastSendTime = now;
+    requestInFlight = true;
 
     try {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", `http://localhost:5000/color?r=${r}&g=${g}&b=${b}`, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) requestInFlight = false;
+        };
         xhr.send();
     } catch(e) {
+        requestInFlight = false;
         device.log("Request error: " + e.message);
     }
 }
@@ -76,14 +90,17 @@ class TuyaBridgeController {
 }
 
 export function DiscoveryService() {
+    this.controller = null;
+
     this.Initialize = function() {
         service.log("Tuya Bridge: DiscoveryService init");
-        service.addController(new TuyaBridgeController());
+        this.controller = new TuyaBridgeController();
+        service.addController(this.controller);
     }
 
     this.Update = function() {
-        for (const cont of service.controllers) {
-            cont.obj.update();
+        if (this.controller && !this.controller.initialized) {
+            this.controller.update();
         }
     }
 
