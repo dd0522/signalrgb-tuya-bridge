@@ -1,24 +1,29 @@
-export function Publisher() {
-    return {
-        Name: "Tuya RGB Bridge",
-        Description: "Controls Tuya WiFi LED strip via local Python bridge",
-        Author: "custom",
-        Version: "1.0",
-        Date: "2025",
-        Type: "external",
-        subdeviceType: "ledstrip"
-    };
+export function Name() { return "Tuya Bridge"; }
+export function Version() { return "1.0.0"; }
+export function Type() { return "network"; }
+export function Publisher() { return "custom"; }
+export function Size() { return [1, 1]; }
+export function DefaultPosition() { return [0, 70]; }
+export function DefaultScale() { return 1.0; }
+export function ControllableParameters() {
+    return [
+        {"property":"lightingMode", "group":"settings", "label":"Lighting Mode", "type":"combobox", "values":["Canvas", "Forced"], "default":"Canvas"},
+        {"property":"forcedColor", "group":"settings", "label":"Forced Color", "type":"color", "default":"#FF0000"}
+    ];
 }
 
 let lastR = -1, lastG = -1, lastB = -1;
 
-export function Initialize() {
-    service.setProperty("bridgeStatus", "Running");
-    service.addDevice("TuyaStrip", "Tuya RGB Strip", "ledstrip", 1);
-}
+export function Initialize() {}
 
 export function Render() {
-    const color = service.lighting.getDeviceLed("TuyaStrip", 0);
+    let color;
+    if (lightingMode === "Forced") {
+        color = hexToRgb(forcedColor);
+    } else {
+        color = service.getLedColor(0, 0);
+    }
+
     if (!color) return;
 
     const r = Math.round(color.r);
@@ -28,8 +33,34 @@ export function Render() {
     if (r === lastR && g === lastG && b === lastB) return;
     lastR = r; lastG = g; lastB = b;
 
-    fetch(`http://localhost:5000/color?r=${r}&g=${g}&b=${b}`)
-        .catch(() => service.setProperty("bridgeStatus", "Bridge not reachable"));
+    fetch(`http://localhost:5000/color?r=${r}&g=${g}&b=${b}`).catch(() => {});
 }
 
 export function Shutdown() {}
+
+export function Validate() { return true; }
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : {r: 0, g: 0, b: 0};
+}
+
+export function DiscoveryService() {
+    this.Initialize = function() {
+        if (!service.hasController("tuya-bridge-001")) {
+            const controller = {
+                id: "tuya-bridge-001",
+                name: "Tuya RGB Strip"
+            };
+            service.addController(controller);
+            service.announceController(controller);
+        }
+    }
+
+    this.Update = function() {}
+    this.Discovered = function() {}
+}
