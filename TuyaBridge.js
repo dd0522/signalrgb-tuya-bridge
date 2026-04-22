@@ -14,7 +14,9 @@ export function ControllableParameters() {
 
 let lastR = -1, lastG = -1, lastB = -1;
 
-export function Initialize() {}
+export function Initialize() {
+    service.log("Tuya Bridge: Initialize called");
+}
 
 export function Render() {
     let color;
@@ -50,12 +52,18 @@ function hexToRgb(hex) {
 
 export function DiscoveryService() {
     this.Initialize = function() {
+        service.log("Tuya Bridge: DiscoveryService Initialize");
         try {
-            service.log("Tuya Bridge: Announcing device...");
-            service.announceController({
+            const controller = {
                 id: "tuya-bridge-001",
-                name: "Tuya RGB Strip"
-            });
+                name: "Tuya RGB Strip",
+                enabled: true
+            };
+            service.log("Tuya Bridge: calling addController");
+            service.addController(controller);
+            service.log("Tuya Bridge: calling announceController");
+            service.announceController(controller);
+            service.log("Tuya Bridge: done");
         } catch(ex) {
             service.log("Tuya Bridge error: " + ex.message);
         }
