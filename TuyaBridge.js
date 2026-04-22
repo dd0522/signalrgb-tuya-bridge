@@ -12,25 +12,37 @@ export function ControllableParameters() {
     ];
 }
 
+const LED_COUNT = 1;
 let lastR = -1, lastG = -1, lastB = -1;
 
 export function Initialize() {
     service.log("Tuya Bridge: Initialize called");
+    device.setName("Tuya RGB Strip");
+    device.setSize([LED_COUNT, 1]);
+
+    let ledNames = [];
+    let ledPositions = [];
+    for (let i = 0; i < LED_COUNT; i++) {
+        ledNames.push(`Led ${i + 1}`);
+        ledPositions.push([i, 0]);
+    }
+    device.setControllableLeds(ledNames, ledPositions);
+    service.log("Tuya Bridge: device setup complete");
 }
 
 export function Render() {
-    let color;
+    let r, g, b;
+
     if (lightingMode === "Forced") {
-        color = hexToRgb(forcedColor);
+        const color = hexToRgb(forcedColor);
+        r = color.r; g = color.g; b = color.b;
     } else {
-        color = service.getLedColor(0, 0);
+        const color = device.color(0, 0);
+        if (!color) return;
+        r = Math.round(color.r);
+        g = Math.round(color.g);
+        b = Math.round(color.b);
     }
-
-    if (!color) return;
-
-    const r = Math.round(color.r);
-    const g = Math.round(color.g);
-    const b = Math.round(color.b);
 
     if (r === lastR && g === lastG && b === lastB) return;
     lastR = r; lastG = g; lastB = b;
@@ -59,11 +71,9 @@ export function DiscoveryService() {
                 name: "Tuya RGB Strip",
                 enabled: true
             };
-            service.log("Tuya Bridge: calling addController");
             service.addController(controller);
-            service.log("Tuya Bridge: calling announceController");
             service.announceController(controller);
-            service.log("Tuya Bridge: done");
+            service.log("Tuya Bridge: controller announced");
         } catch(ex) {
             service.log("Tuya Bridge error: " + ex.message);
         }
