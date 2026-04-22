@@ -1,66 +1,47 @@
-export function Name() { return "Tuya Bridge"; }
-export function Version() { return "1.0.0"; }
-export function Type() { return "network"; }
-export function Publisher() { return "custom"; }
-export function Size() { return [1, 1]; }
-export function DefaultPosition() { return [0, 70]; }
-export function DefaultScale() { return 1.0; }
-export function ControllableParameters() {
-    return [
-        {"property":"lightingMode", "group":"settings", "label":"Lighting Mode", "type":"combobox", "values":["Canvas", "Forced"], "default":"Canvas"},
-        {"property":"forcedColor", "group":"settings", "label":"Forced Color", "type":"color", "default":"#FF0000"}
-    ];
-}
+Item {
+    anchors.fill: parent
 
-let lastR = -1, lastG = -1, lastB = -1;
+    Column {
+        y: 10
+        width: parent.width - 20
+        spacing: 15
 
-export function Initialize() {}
+        Text {
+            color: theme.primarytextcolor
+            text: "Tuya RGB Bridge"
+            font.pixelSize: 16
+            font.family: "Poppins"
+            font.bold: true
+        }
 
-export function Render() {
-    let color;
-    if (lightingMode === "Forced") {
-        color = hexToRgb(forcedColor);
-    } else {
-        color = service.getLedColor(0, 0);
-    }
+        Text {
+            color: theme.primarytextcolor
+            text: "Make sure your Python bridge is running at http://localhost:5000 then click Add Device."
+            font.pixelSize: 13
+            font.family: "Poppins"
+            width: parent.width
+            wrapMode: Text.WordWrap
+        }
 
-    if (!color) return;
-
-    const r = Math.round(color.r);
-    const g = Math.round(color.g);
-    const b = Math.round(color.b);
-
-    if (r === lastR && g === lastG && b === lastB) return;
-    lastR = r; lastG = g; lastB = b;
-
-    fetch(`http://localhost:5000/color?r=${r}&g=${g}&b=${b}`).catch(() => {});
-}
-
-export function Shutdown() {}
-
-export function Validate() { return true; }
-
-function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : {r: 0, g: 0, b: 0};
-}
-
-export function DiscoveryService() {
-    this.Initialize = function() {
-        if (!service.hasController("tuya-bridge-001")) {
-            const controller = {
-                id: "tuya-bridge-001",
-                name: "Tuya RGB Strip"
-            };
-            service.addController(controller);
-            service.announceController(controller);
+        Item {
+            Rectangle {
+                width: 120
+                height: 30
+                color: "#003000"
+                radius: 2
+            }
+            width: 120
+            height: 30
+            ToolButton {
+                height: 30
+                width: 120
+                font.family: "Poppins"
+                font.bold: true
+                text: "Add Device"
+                onClicked: {
+                    service.triggerDiscovery();
+                }
+            }
         }
     }
-
-    this.Update = function() {}
-    this.Discovered = function() {}
 }
