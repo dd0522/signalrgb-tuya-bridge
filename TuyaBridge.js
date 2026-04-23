@@ -15,7 +15,7 @@ export function ControllableParameters() {
 let lastR = -1, lastG = -1, lastB = -1;
 let requestInFlight = false;
 let lastSendTime = 0;
-const SEND_INTERVAL = 50;
+const SEND_INTERVAL = 600;
 
 export function Initialize() {
     device.setName("Tuya RGB Strip");
